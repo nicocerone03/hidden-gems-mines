@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>HIDDEN GEMS MINES · v18</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{width:100%;height:100%;overflow:hidden;}
+body{background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+
+#gems-bg{position:fixed;inset:0;background:url('img/tilegemsBg.png') center/contain no-repeat;z-index:1;pointer-events:none;}
+#studio-logo{position:fixed;top:1.5vh;left:1.5vw;height:clamp(22px,3vh,36px);width:auto;z-index:20;pointer-events:none;opacity:0.85;}
+#proto-corner{position:fixed;bottom:1.5vh;left:1.5vw;font-family:monospace;font-size:clamp(7px,0.9vw,11px);color:rgba(255,255,255,0.22);letter-spacing:2px;text-transform:uppercase;z-index:20;pointer-events:none;}
+#bomb-flash{position:fixed;inset:0;z-index:600;background:rgba(255,0,0,0);pointer-events:none;transition:background 0.1s;}
+#bomb-flash.active{background:rgba(255,0,0,0.22);}
+@keyframes bombShake{0%,100%{transform:translate(0,0);}10%{transform:translate(-7px,3px);}20%{transform:translate(8px,-4px);}30%{transform:translate(-6px,5px);}40%{transform:translate(7px,-3px);}50%{transform:translate(-5px,4px);}60%{transform:translate(6px,-2px);}70%{transform:translate(-4px,3px);}80%{transform:translate(4px,-2px);}90%{transform:translate(-2px,1px);}}
+body.shake{animation:bombShake 0.5s ease;}
+#intro-reset{position:fixed;bottom:0;right:0;width:40px;height:40px;z-index:50;opacity:0;cursor:default;}
+
+/* GEM PARTICLES → cashout */
+.gem-particle{position:fixed;pointer-events:none;z-index:700;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
+
+/* CASCADE GEMS — above overlay backdrop, below overlay box */
+.cascade-gem{position:fixed;pointer-events:none;z-index:802;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
+
+/* CASHOUT BUMP */
+@keyframes cashoutBump{0%{transform:scale(1);}30%{transform:scale(1.38);}70%{transform:scale(1.28);}100%{transform:scale(1);}}
+.cashout-bump{animation:cashoutBump 0.55s ease forwards;color:#ffd700 !important;}
+
+/* WIN AMOUNT */
+#overlay-amount{font-family:monospace;font-size:clamp(28px,5vw,48px);font-weight:bold;color:#ffd700;letter-spacing:2px;text-shadow:0 0 20px rgba(255,215,0,0.6);min-height:1.2em;}
+
+/* MENU */
+#menu-btn{position:fixed;top:1.5vh;right:1.5vw;width:40px;height:40px;z-index:200;background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.2);border-radius:7px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:background 0.2s;}
+#menu-btn:hover{background:rgba(255,255,255,0.1);}
+#menu-btn span{display:block;width:18px;height:2px;background:#fff;border-radius:2px;}
+#menu-panel{position:fixed;top:calc(1.5vh + 48px);right:1.5vw;background:rgba(12,10,22,0.97);border:1px solid rgba(255,255,255,0.12);border-radius:9px;padding:6px;z-index:199;display:flex;flex-direction:column;gap:3px;min-width:165px;opacity:0;pointer-events:none;transform:translateY(-8px);transition:opacity 0.2s,transform 0.2s;}
+#menu-panel.open{opacity:1;pointer-events:all;transform:translateY(0);}
+.menu-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:5px;cursor:pointer;font-family:monospace;font-size:13px;color:rgba(255,255,255,0.8);letter-spacing:1px;transition:background 0.15s,color 0.2s,opacity 0.2s;border:none;background:transparent;width:100%;text-align:left;}
+.menu-item:hover{background:rgba(255,255,255,0.08);color:#fff;}
+/* Audio item muted state */
+#menu-audio-btn.muted{opacity:0.4;color:rgba(255,255,255,0.4);}
+#menu-audio-btn.muted .micon{filter:grayscale(1);}
+.micon{font-size:15px;width:20px;text-align:center;}
+#menu-backdrop{position:fixed;inset:0;z-index:198;display:none;}
+#menu-backdrop.show{display:block;}
+
+/* PANELS */
+.menu-content{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(12,10,22,0.98);border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:28px 32px;z-index:201;min-width:280px;max-width:88vw;display:none;flex-direction:column;gap:14px;}
+.menu-content.open{display:flex;}
+.menu-content h3{font-family:monospace;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ffd700;}
+.menu-content p{font-family:monospace;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.75;}
+.close-btn{align-self:flex-end;background:none;border:1px solid rgba(255,255,255,0.2);color:rgba(255,255,255,0.5);font-size:10px;padding:5px 12px;border-radius:4px;cursor:pointer;font-family:monospace;letter-spacing:1px;margin-top:4px;}
+.close-btn:hover{color:#fff;border-color:rgba(255,255,255,0.5);}
+.mult-table{display:grid;grid-template-columns:1fr 1fr;gap:4px 20px;}
+.mult-table .mrow-l{font-family:monospace;font-size:11px;color:rgba(255,255,255,0.45);}
+.mult-table .mrow-r{font-family:monospace;font-size:11px;color:#ffd700;font-weight:bold;}
+.pref-row{display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.pref-row label{font-family:monospace;font-size:11px;color:rgba(255,255,255,0.55);letter-spacing:1px;text-transform:uppercase;}
+
+/* INTRO */
+#intro{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;transition:opacity 0.8s ease;}
+#intro.fade-out{opacity:0;pointer-events:none;}
+#intro.hidden{display:none;}
+#intro-logo{max-width:55vw;max-height:55vh;width:auto;height:auto;animation:logoPulse 2s ease-in-out;}
+@keyframes logoPulse{0%{opacity:0;transform:scale(0.9);}30%{opacity:1;transform:scale(1);}100%{opacity:1;transform:scale(1);}}
+
+/* GAME */
+#game{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:calc(var(--s)*8px);width:calc(var(--s)*560px);}
+#title-area{display:flex;flex-direction:column;align-items:center;}
+#game-title{height:calc(var(--s)*58px);width:auto;display:block;}
+
+/* STATS DESKTOP */
+#stats{position:relative;display:flex;width:100%;height:calc(var(--s)*68px);align-items:center;}
+#stats-bg{position:absolute;inset:0;background:url('img/tileStats.png') center/100% 100% no-repeat;pointer-events:none;}
+.stat{flex:1;display:flex;flex-direction:column;align-items:center;gap:calc(var(--s)*2px);position:relative;z-index:1;}
+.stat-label{font-family:monospace;font-size:calc(var(--s)*8px);text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.35);}
+.stat-val{font-family:monospace;font-size:calc(var(--s)*17px);font-weight:bold;color:#fff;}
+#stat-cashout{color:#6dffaa;}
+
+/* STATS PORTRAIT */
+#stats-portrait{display:none;flex-direction:column;gap:4px;}
+#sp-balance{display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:6px 0;width:100%;}
+#sp-row2{display:flex;gap:4px;width:100%;}
+.sp-half{display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.5);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:5px 0;flex:1;min-width:0;}
+.sp-label{font-family:monospace;font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.35);}
+.sp-val{font-family:monospace;font-size:17px;font-weight:bold;color:#fff;}
+#sp-cashout-val{color:#6dffaa;}
+
+/* STEP */
+#step-label{font-family:monospace;font-size:calc(var(--s)*12px);font-weight:bold;letter-spacing:1px;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,0.8);}
+
+/* GRID */
+#grid-area{display:flex;gap:calc(var(--s)*6px);align-items:flex-start;}
+#grid-viewport{overflow:hidden;position:relative;flex-shrink:0;}
+#grid{display:grid;position:absolute;top:0;left:0;}
+#mult-left,#mult-right{overflow:hidden;position:relative;flex-shrink:0;}
+#mult-left-inner,#mult-right-inner{position:absolute;top:0;left:0;right:0;display:flex;flex-direction:column;}
+.mult-lbl{font-family:monospace;font-size:calc(var(--s)*11px);font-weight:bold;color:rgba(255,255,255,0.9);text-shadow:0 1px 4px rgba(0,0,0,0.9);display:flex;align-items:center;flex-shrink:0;}
+#mult-left .mult-lbl{justify-content:flex-end;padding-right:calc(var(--s)*4px);}
+#mult-right .mult-lbl{justify-content:flex-start;padding-left:calc(var(--s)*4px);}
+.mult-lbl.active{color:#ffd700;text-shadow:0 0 8px rgba(255,215,0,0.8),0 1px 4px rgba(0,0,0,0.9);}
+
+/* SCROLLBAR */
+#scrollbar{position:relative;flex-shrink:0;display:flex;justify-content:center;}
+#scroll-track{position:absolute;top:11px;bottom:11px;width:3px;background:rgba(255,255,255,0.5);border-radius:2px;left:50%;transform:translateX(-50%);}
+#scroll-thumb{position:absolute;width:20px;height:20px;background:#fff;border-radius:50%;left:50%;transform:translateX(-50%);cursor:grab;box-shadow:0 2px 8px rgba(0,0,0,0.5);user-select:none;touch-action:none;}
+#scroll-thumb:active{cursor:grabbing;}
+
+/* TILES */
+.tile{background:url("img/tiletapado.png") center/cover no-repeat transparent;border:2px solid rgba(255,255,255,0.08);border-radius:calc(var(--s)*5px);display:flex;align-items:center;justify-content:center;color:transparent;cursor:default;flex-shrink:0;transition:transform 0.12s,filter 0.12s;}
+.tile.clickable{cursor:pointer;background:url("img/tileClickeable.png") center/cover no-repeat transparent;border-color:rgba(255,215,0,0.4);filter:brightness(1.08);}
+.tile.gem{background:url('img/tileGema.png') center/cover no-repeat #1a4a2a;border-color:rgba(100,255,150,0.6);}
+.tile.bomb{background:url('img/tileBomba.png') center/cover no-repeat #4a1a1a;border-color:rgba(255,80,80,0.7);}
+.tile.other-gem{background:url('img/tilePasada.png') center/cover no-repeat #0e2a1a;border-color:rgba(100,200,130,0.15);}
+.tile.other-bomb{background:url('img/tileBombaApagada.png') center/cover no-repeat #2a0e0e;border-color:rgba(200,80,80,0.15);}
+.tile.passed{background:url('img/tilePasada.png') center/cover no-repeat #0a1e0a;border-color:rgba(80,180,100,0.1);}
+
+/* GHOST */
+#tile-ghost{position:fixed;pointer-events:none;z-index:500;border-radius:calc(var(--s)*5px);border:2px solid #ffd700;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;box-shadow:0 0 16px rgba(255,215,0,0.5);opacity:0;transition:opacity 0.12s;}
+
+/* STATUS */
+#status{font-family:monospace;font-size:calc(var(--s)*10px);color:rgba(255,255,255,0.55);letter-spacing:1.5px;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,0.8);}
+
+/* CONTROLS */
+#controls{display:flex;gap:calc(var(--s)*10px);align-items:center;justify-content:center;}
+#bet-wrap{display:flex;align-items:center;gap:calc(var(--s)*6px);border:1px solid rgba(255,255,255,0.15);padding:calc(var(--s)*6px) calc(var(--s)*12px);border-radius:calc(var(--s)*4px);background:rgba(0,0,0,0.5);}
+.bet-label{font-family:monospace;font-size:calc(var(--s)*9px);text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.35);}
+.bet-btn{width:calc(var(--s)*26px);height:calc(var(--s)*26px);border:1px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);border-radius:calc(var(--s)*3px);font-size:calc(var(--s)*16px);cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;}
+.bet-btn:hover{background:rgba(255,255,255,0.18);}
+#bet-val{font-family:monospace;font-size:calc(var(--s)*16px);font-weight:bold;min-width:calc(var(--s)*52px);text-align:center;color:#ffd700;}
+.btn{position:relative;border:none;background:transparent;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;transition:transform 0.1s,opacity 0.1s;}
+.btn:hover:not(:disabled){transform:translateY(-2px);}
+.btn:disabled{opacity:0.35;cursor:default;transform:none;}
+.btn-bg{display:block;height:calc(var(--s)*44px);width:auto;}
+.btn-bg-lg{display:block;height:calc(var(--s)*52px);width:auto;}
+/* Bigger button label text */
+.btn-label{position:absolute;font-family:monospace;font-weight:bold;letter-spacing:2px;text-transform:uppercase;font-size:calc(var(--s)*15px);color:#fff;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,0.8);}
+
+/* PORTRAIT */
+@media (orientation:portrait) and (max-width:600px){
+  #stats{display:none;}
+  #stats-portrait{display:flex;}
+  #controls{flex-direction:column;gap:7px;}
+  #bet-wrap{justify-content:center;padding:9px 18px;}
+  #start-btn,#cashout-btn{width:100%;}
+  .btn-bg{height:46px;}
+  .btn-label{font-size:16px;}
+}
+
+/* OVERLAY */
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);align-items:center;justify-content:center;z-index:800;}
+#overlay.show{display:flex;}
+#overlay-box{background:#1a1a2a;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:36px 52px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;z-index:803;max-width:90vw;}
+#overlay-title{font-family:monospace;font-size:clamp(20px,4vw,28px);font-weight:bold;letter-spacing:3px;text-transform:uppercase;}
+#overlay-title.win{color:#6dffaa;}
+#overlay-title.lose{color:#ff6060;}
+#overlay-detail{font-family:monospace;font-size:13px;color:rgba(255,255,255,0.45);}
+</style>
+</head>
+<body>
+<div id="gems-bg"></div>
+<img id="studio-logo" src="img/logoBlanco.png" alt="Andes Horizon Studios">
+<div id="proto-corner">Prototype v18</div>
+<div id="bomb-flash"></div>
+<div id="intro-reset"></div>
+
+<!-- MENU -->
+<button id="menu-btn" onclick="toggleMenu()"><span></span><span></span><span></span></button>
+<div id="menu-backdrop" onclick="closeMenu()"></div>
+<div id="menu-panel">
+  <button class="menu-item" onclick="openPanel('info')"><span class="micon">ℹ️</span>Info</button>
+  <button class="menu-item" onclick="openPanel('settings')"><span class="micon">⚙️</span>Settings</button>
+  <button class="menu-item" id="menu-audio-btn" onclick="toggleMuteMenu()"><span class="micon">🔊</span><span id="menu-audio-label">Audio</span></button>
+</div>
+
+<!-- INFO -->
+<div class="menu-content" id="panel-info">
+  <h3>How to play</h3>
+  <p>Each row has 5 tiles: 4 gems and 1 hidden bomb. Pick one tile per row to advance. The higher you go, the bigger the multiplier.</p>
+  <p>You can <strong style="color:#ffd700">Cash Out</strong> anytime after clearing the first row. Hit a bomb and you lose your bet.</p>
+  <h3>Multipliers</h3>
+  <div class="mult-table" id="mult-table-info"></div>
+  <button class="close-btn" onclick="closePanel('info')">CLOSE</button>
+</div>
+
+<!-- SETTINGS -->
+<div class="menu-content" id="panel-settings">
+  <h3>Settings</h3>
+  <div class="pref-row"><label>Language</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">English</span></div>
+  <div class="pref-row"><label>Version</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">Prototype v18</span></div>
+  <button class="close-btn" onclick="closePanel('settings')">CLOSE</button>
+</div>
+
+<!-- INTRO -->
+<div id="intro"><img id="intro-logo" src="img/gameLogo.png" alt="Logo"></div>
+<div id="tile-ghost"></div>
+
+<div id="game">
+  <div id="title-area"><img id="game-title" src="img/tileGameTitle.png" alt="Hidden Gems Mines"></div>
+
+  <!-- STATS DESKTOP -->
+  <div id="stats">
+    <div id="stats-bg"></div>
+    <div class="stat"><span class="stat-label">Balance</span><span class="stat-val" id="stat-balance">1000.00</span></div>
+    <div class="stat"><span class="stat-label">Bet</span><span class="stat-val" id="stat-bet">5.00</span></div>
+    <div class="stat"><span class="stat-label">Cashout</span><span class="stat-val" id="stat-cashout" style="color:#6dffaa;">—</span></div>
+  </div>
+
+  <!-- STATS PORTRAIT -->
+  <div id="stats-portrait">
+    <div id="sp-balance"><span class="sp-label">Balance</span><span class="sp-val" id="sp-balance-val">1000.00</span></div>
+    <div id="sp-row2">
+      <div class="sp-half"><span class="sp-label">Bet</span><span class="sp-val" id="sp-bet-val">5.00</span></div>
+      <div class="sp-half"><span class="sp-label">Cashout</span><span class="sp-val" id="sp-cashout-val" style="color:#6dffaa;">—</span></div>
+    </div>
+  </div>
+
+  <div id="step-label">Place your bet to begin</div>
+
+  <div id="grid-area">
+    <div id="mult-left"><div id="mult-left-inner"></div></div>
+    <div id="grid-viewport"><div id="grid"></div></div>
+    <div id="scrollbar"><div id="scroll-track"></div><div id="scroll-thumb"></div></div>
+    <div id="mult-right"><div id="mult-right-inner"></div></div>
+  </div>
+
+  <div id="status">Adjust your bet and press PLAY</div>
+
+  <div id="controls">
+    <div id="bet-wrap">
+      <span class="bet-label">Bet</span>
+      <button class="bet-btn" onclick="changeBet(-1)">−</button>
+      <div id="bet-val">5.00</div>
+      <button class="bet-btn" onclick="changeBet(1)">+</button>
+    </div>
+    <button class="btn" id="start-btn" onclick="startGame()">
+      <img class="btn-bg" src="img/tilePlayButton.png" alt=""><span class="btn-label">Play</span>
+    </button>
+    <button class="btn" id="cashout-btn" disabled onclick="doCashout()">
+      <img class="btn-bg" src="img/tileCashoutButton.png" alt=""><span class="btn-label">Cash Out</span>
+    </button>
+  </div>
+</div>
+
+<div id="overlay">
+  <div id="overlay-box">
+    <div id="overlay-title"></div>
+    <div id="overlay-amount"></div>
+    <div id="overlay-detail"></div>
+    <button class="btn" onclick="closeOverlay()">
+      <img class="btn-bg-lg" src="img/tilePlayAgainButton.png" alt=""><span class="btn-label">Play Again</span>
+    </button>
+  </div>
+</div>
+
+<script>
+const ROWS=12,COLS=5,VISIBLE=5,GAP_B=4,MULT_W_B=46,SCROLL_W_B=22;
+const TILE_B=80,VP_B=VISIBLE*(TILE_B+GAP_B)-GAP_B;
+const BETS=[1,2,5,10,25,50,100];
+const MULTS=[1.23,1.53,1.92,2.40,2.99,3.74,4.67,5.84,7.30,9.12,11.40,14.25];
+const STORAGE_KEY='hgm_intro_seen';
+const CAM_MS=380;
+
+let S,TILE,ROW_H,VP_H,TOTAL_H,MAX_SCROLL,MULT_W,SCROLL_W,GRID_W_PX=0;
+let balance=1000,betIdx=2,grid=[],currentRow=0,gameActive=false,stepsDone=0;
+let scrollTop=0,isDragging=false,dragStartY=0,dragStartOff=0,camAnimTimer=null;
+let muted=false,currentCashoutDisplay=0,cashoutAnimFrame=null;
+
+const bet=()=>BETS[betIdx],fmt=n=>n.toFixed(2);
+const getY=e=>e.touches?e.touches[0].clientY:e.clientY;
+const el=id=>document.getElementById(id);
+
+// AUDIO
+// Unlock audio on first touch/click (browser autoplay policy)
+let audioUnlocked=false;
+function unlockAudio(){
+  if(audioUnlocked)return;
+  audioUnlocked=true;
+  Object.values(AC).forEach(a=>{
+    const s=a.cloneNode();s.volume=0;
+    s.play().then(()=>s.pause()).catch(()=>{});
+  });
+}
+document.addEventListener('click',unlockAudio,{once:true});
+document.addEventListener('touchstart',unlockAudio,{once:true});
+
+const SFX={play:{src:'audio/soundJugar.mp3',vol:0.7},gem:{src:'audio/soundgemReveal.mp3',vol:0.8},bomb:{src:'audio/soundBomb.mp3',vol:0.9},win:{src:'audio/soundganaste.mp3',vol:0.8}};
+const AC={};
+Object.entries(SFX).forEach(([k,{src,vol}])=>{const a=new Audio(src);a.volume=vol;a.preload='auto';AC[k]=a;});
+function playSound(k){if(muted)return;const o=AC[k];if(!o)return;const c=o.cloneNode();c.volume=o.volume;c.play().catch(()=>{});}
+
+// AUDIO TOGGLE — from menu item, no panel
+function toggleMuteMenu(){
+  muted=!muted;
+  const btn=el('menu-audio-btn');
+  btn.classList.toggle('muted',muted);
+  el('menu-audio-label').textContent=muted?'Audio (off)':'Audio';
+  // Change icon
+  btn.querySelector('.micon').textContent=muted?'🔇':'🔊';
+}
+
+// MENU
+let menuOpen=false;
+function toggleMenu(){menuOpen=!menuOpen;el('menu-panel').classList.toggle('open',menuOpen);el('menu-backdrop').classList.toggle('show',menuOpen);}
+function closeMenu(){menuOpen=false;el('menu-panel').classList.remove('open');el('menu-backdrop').classList.remove('show');}
+function openPanel(id){closeMenu();document.querySelectorAll('.menu-content').forEach(p=>p.classList.remove('open'));el('panel-'+id).classList.add('open');}
+function closePanel(id){el('panel-'+id).classList.remove('open');}
+(()=>{const t=el('mult-table-info');MULTS.forEach((m,i)=>{t.innerHTML+=`<span class="mrow-l">Row ${i+1}</span><span class="mrow-r">x${m}</span>`;});})();
+
+// INTRO
+(()=>{const intro=el('intro');if(localStorage.getItem(STORAGE_KEY)){intro.classList.add('hidden');return;}localStorage.setItem(STORAGE_KEY,'1');setTimeout(()=>{intro.classList.add('fade-out');setTimeout(()=>intro.classList.add('hidden'),800);},2500);})();
+let rClicks=0,rTimer=null;
+el('intro-reset').addEventListener('click',()=>{rClicks++;clearTimeout(rTimer);rTimer=setTimeout(()=>rClicks=0,600);if(rClicks>=3){rClicks=0;localStorage.removeItem(STORAGE_KEY);const i=el('intro');i.classList.remove('hidden','fade-out');setTimeout(()=>{i.classList.add('fade-out');setTimeout(()=>i.classList.add('hidden'),800);},2500);}});
+
+// BOMB
+function triggerBombAnim(){const b=document.body,f=el('bomb-flash');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake');f.classList.add('active');setTimeout(()=>{f.classList.remove('active');b.classList.remove('shake');},600);}
+
+// GEM PARTICLES → cashout
+function spawnGemParticles(tileDom,fromVal,toVal){
+  const tr=tileDom.getBoundingClientRect();
+  const cx=tr.left+tr.width/2,cy=tr.top+tr.height/2;
+  const portrait=isPortrait();
+  const cashEl=portrait?el('sp-cashout-val'):el('stat-cashout');
+  const cr=cashEl.getBoundingClientRect();
+  const tx=cr.left+cr.width/2,ty=cr.top+cr.height/2;
+  const COUNT=7,SIZE=Math.round(TILE*0.22);
+  const angles=Array.from({length:COUNT},(_,i)=>(360/COUNT)*i+Math.random()*20-10);
+  angles.forEach((angleDeg,i)=>{
+    const p=document.createElement('div');p.className='gem-particle';
+    p.style.cssText=`width:${SIZE}px;height:${SIZE}px;left:${cx-SIZE/2}px;top:${cy-SIZE/2}px;opacity:1;transform:scale(0.6);transition:none;`;
+    document.body.appendChild(p);
+    requestAnimationFrame(()=>{
+      const rad=angleDeg*Math.PI/180,dist=TILE*0.55+Math.random()*TILE*0.2;
+      p.style.transition=`left 0.22s cubic-bezier(0.2,0,0.4,1),top 0.22s cubic-bezier(0.2,0,0.4,1),transform 0.22s ease`;
+      p.style.left=(cx+Math.cos(rad)*dist-SIZE/2)+'px';p.style.top=(cy+Math.sin(rad)*dist-SIZE/2)+'px';p.style.transform='scale(1.1)';
+    });
+    const delay=220+i*30;
+    setTimeout(()=>{
+      if(!document.body.contains(p))return;
+      p.style.transition=`left 0.55s cubic-bezier(0.4,0,0.2,1),top 0.55s cubic-bezier(0.4,0,0.2,1),transform 0.55s ease,opacity 0.4s ease 0.25s`;
+      p.style.left=(tx-SIZE/2)+'px';p.style.top=(ty-SIZE/2)+'px';p.style.transform='scale(0.5)';p.style.opacity='0';
+    },delay);
+    setTimeout(()=>p.remove(),delay+620);
+  });
+  setTimeout(()=>animateCashoutNumber(fromVal,toVal),220+(COUNT-1)*30+420);
+}
+
+function animateCashoutNumber(fromVal,toVal){
+  const portrait=isPortrait();
+  const cashEl=portrait?el('sp-cashout-val'):el('stat-cashout');
+  cashEl.classList.remove('cashout-bump');void cashEl.offsetWidth;
+  if(cashoutAnimFrame)cancelAnimationFrame(cashoutAnimFrame);
+  const duration=500,start=performance.now();
+  function tick(now){
+    const t=Math.min((now-start)/duration,1),eased=1-Math.pow(1-t,3);
+    cashEl.textContent=(fromVal+(toVal-fromVal)*eased).toFixed(2);
+    if(t<1){cashoutAnimFrame=requestAnimationFrame(tick);}
+    else{cashEl.textContent=toVal.toFixed(2);currentCashoutDisplay=toVal;cashEl.classList.add('cashout-bump');setTimeout(()=>cashEl.classList.remove('cashout-bump'),700);cashoutAnimFrame=null;}
+  }
+  cashoutAnimFrame=requestAnimationFrame(tick);
+}
+
+// ── WIN CASCADE ─────────────────────────────────────────────────────────────
+// 100 gems erupt from the center of the overlay box with a fountain arc.
+// Each gem is driven by JS requestAnimationFrame so we can apply
+// real gravity (vy += gravity each frame) → natural parabolic arc.
+// z-index 802 = above overlay backdrop (800) but below overlay box (803).
+function spawnWinCascade(){
+  const box=el('overlay-box');
+  const r=box.getBoundingClientRect();
+  const cx=r.left+r.width/2;
+  const cy=r.top+r.height/2;
+  const W=window.innerWidth, H=window.innerHeight;
+  const SIZE=Math.round(Math.min(W,H)*0.040);
+  const COUNT=100;
+  const GRAVITY=0.55;      // px per frame² — fast, natural fall
+  const SPREAD=170;        // total launch angle spread in degrees
+  const BASE_ANGLE=-90;    // pointing straight up
+
+  for(let i=0;i<COUNT;i++){
+    // Stagger launches over 1.8s so it looks like a continuous fountain
+    setTimeout(()=>{
+      const p=document.createElement('div');
+      p.className='cascade-gem';
+      p.style.cssText=`width:${SIZE}px;height:${SIZE}px;left:${cx-SIZE/2}px;top:${cy-SIZE/2}px;opacity:1;will-change:transform;`;
+      document.body.appendChild(p);
+
+      // Launch vector
+      const angle=(BASE_ANGLE+(Math.random()-0.5)*SPREAD)*Math.PI/180;
+      const speed=7+Math.random()*10;   // px/frame initial speed
+      let vx=Math.cos(angle)*speed;
+      let vy=Math.sin(angle)*speed;     // negative = upward
+      let px=cx-SIZE/2;
+      let py=cy-SIZE/2;
+      let rotation=Math.random()*360;
+      const rotSpeed=(Math.random()-0.5)*8; // deg/frame
+      let alive=true;
+      let frameCount=0;
+      const maxFrames=200; // safety cap
+
+      function frame(){
+        if(!alive||!document.body.contains(p)){p.remove();return;}
+        vy+=GRAVITY;          // gravity accelerates downward each frame
+        px+=vx;
+        py+=vy;
+        rotation+=rotSpeed;
+        p.style.left=px+'px';
+        p.style.top=py+'px';
+        p.style.transform=`rotate(${rotation}deg)`;
+        frameCount++;
+        // Fade out near bottom or after too many frames
+        if(py>H-SIZE*2||frameCount>maxFrames){
+          p.style.opacity='0';
+          setTimeout(()=>p.remove(),300);
+          alive=false;
+          return;
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }, i*(1800/COUNT)+Math.random()*20);
+  }
+}
+
+// WIN AMOUNT COUNTER
+function animateOverlayAmount(targetVal){
+  const amountEl=el('overlay-amount');
+  amountEl.textContent='0.00';
+  const duration=1800,start=performance.now();
+  function tick(now){
+    const t=Math.min((now-start)/duration,1),eased=1-Math.pow(1-t,2.5);
+    amountEl.textContent=fmt(targetVal*eased);
+    if(t<1)requestAnimationFrame(tick);else amountEl.textContent=fmt(targetVal);
+  }
+  requestAnimationFrame(tick);
+}
+
+// GHOST
+const ghost=el('tile-ghost');let ghostTarget=null;
+function showGhost(tile){if(ghostTarget===tile)return;ghostTarget=tile;const r=tile.getBoundingClientRect(),size=Math.round(TILE*1.12),off=(size-TILE)/2;ghost.style.cssText=`position:fixed;left:${r.left-off}px;top:${r.top-off}px;width:${size}px;height:${size}px;border-radius:calc(var(--s)*5px);border:2px solid #ffd700;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;box-shadow:0 0 16px rgba(255,215,0,0.5);pointer-events:none;z-index:500;opacity:1;`;tile.style.opacity='0';}
+function hideGhost(){if(ghostTarget){ghostTarget.style.opacity='';ghostTarget=null;}ghost.style.cssText='position:fixed;opacity:0;pointer-events:none;z-index:500;';}
+function clearGhost(){hideGhost();}
+el('grid').addEventListener('mouseover',e=>{if(camAnimTimer)return;const t=e.target.closest('.tile.clickable');if(t)showGhost(t);});
+el('grid').addEventListener('mouseout',e=>{const t=e.target.closest('.tile.clickable');if(t&&!t.contains(e.relatedTarget))hideGhost();});
+el('grid').addEventListener('touchstart',e=>{const t=e.target.closest('.tile.clickable');if(t){e.preventDefault();t.click();}},{passive:false});
+
+// SCALE
+function isPortrait(){return window.innerWidth<window.innerHeight;}
+function calcScale(){
+  const margin=window.innerHeight*0.04;
+  const portrait=isPortrait();
+  const sH=(window.innerHeight-margin)/(VP_B+(portrait?310:230));
+  const gridW_b=COLS*TILE_B+(COLS-1)*GAP_B;
+  const sW=(window.innerWidth*(portrait?0.97:0.92))/(gridW_b+MULT_W_B*2+SCROLL_W_B+24);
+  S=Math.max(0.4,Math.min(sH,sW,2.5));
+  document.documentElement.style.setProperty('--s',S);
+  TILE=Math.round(TILE_B*S);
+  const GAP=Math.round(GAP_B*S);
+  ROW_H=TILE+GAP;VP_H=VISIBLE*ROW_H-GAP;TOTAL_H=ROWS*ROW_H-GAP;MAX_SCROLL=TOTAL_H-VP_H;
+  MULT_W=Math.round(MULT_W_B*S);SCROLL_W=Math.round(SCROLL_W_B*S);
+  GRID_W_PX=COLS*TILE+(COLS-1)*GAP;
+  el('grid-viewport').style.cssText=`width:${GRID_W_PX}px;height:${VP_H}px;overflow:hidden;position:relative;flex-shrink:0;`;
+  el('mult-left').style.cssText=`width:${MULT_W}px;height:${VP_H}px;overflow:hidden;position:relative;flex-shrink:0;`;
+  el('mult-right').style.cssText=`width:${MULT_W}px;height:${VP_H}px;overflow:hidden;position:relative;flex-shrink:0;`;
+  el('scrollbar').style.cssText=`width:${SCROLL_W}px;height:${VP_H}px;position:relative;flex-shrink:0;display:flex;justify-content:center;`;
+  const totalW=GRID_W_PX+MULT_W*2+SCROLL_W+Math.round(24*S);
+  el('game').style.width=totalW+'px';
+  if(portrait){
+    el('stats-portrait').style.width=GRID_W_PX+'px';
+    el('controls').style.width=GRID_W_PX+'px';
+    el('bet-wrap').style.width=GRID_W_PX+'px';
+  } else {
+    el('controls').style.width='';
+    el('bet-wrap').style.width='';
+  }
+}
+
+// DOM
+function rebuildGrid(){
+  const GAP=ROW_H-TILE;
+  const g=el('grid'),ml=el('mult-left-inner'),mr=el('mult-right-inner');
+  g.innerHTML=ml.innerHTML=mr.innerHTML='';
+  g.style.cssText=`width:${GRID_W_PX}px;height:${TOTAL_H}px;display:grid;grid-template-columns:repeat(${COLS},${TILE}px);gap:${GAP}px;position:absolute;top:0;left:0;`;
+  ml.style.height=mr.style.height=TOTAL_H+'px';
+  for(let r=ROWS-1;r>=0;r--){
+    for(let c=0;c<COLS;c++){
+      const t=document.createElement('div');t.className='tile';t.id=`t-${r}-${c}`;t.style.cssText=`width:${TILE}px;height:${TILE}px;`;g.appendChild(t);
+    }
+    ['mult-left-inner','mult-right-inner'].forEach(id=>{
+      const l=document.createElement('div');l.className='mult-lbl';l.id=`ml-${id}-${r}`;l.textContent='x'+MULTS[r];l.style.cssText=`height:${ROW_H}px;width:${MULT_W}px;`;el(id).appendChild(l);
+    });
+  }
+  scrollTop=MAX_SCROLL;applyCam(false);
+}
+
+// CAMERA
+function applyCam(animate){
+  scrollTop=Math.max(0,Math.min(MAX_SCROLL,scrollTop));
+  const tr=animate?`transform ${CAM_MS}ms cubic-bezier(0.4,0,0.2,1)`:'none';
+  ['grid','mult-left-inner','mult-right-inner'].forEach(id=>{const e=el(id);e.style.transition=tr;e.style.transform=`translateY(${-scrollTop}px)`;});
+  el('scroll-thumb').style.top=(MAX_SCROLL>0?scrollTop/MAX_SCROLL:0)*(VP_H-20)+'px';
+  if(animate){clearGhost();clearTimeout(camAnimTimer);camAnimTimer=setTimeout(()=>{camAnimTimer=null;const h=document.querySelector('.tile.clickable:hover');if(h)showGhost(h);},CAM_MS+20);}
+}
+function scrollToRow(row,animate){scrollTop=Math.max(0,Math.min(MAX_SCROLL,(ROWS-1-row)*ROW_H-(VP_H-2*ROW_H)));applyCam(animate);}
+
+// SCROLLBAR
+const thumb=el('scroll-thumb');
+thumb.addEventListener('mousedown',e=>{e.preventDefault();isDragging=true;dragStartY=getY(e);dragStartOff=scrollTop;});
+thumb.addEventListener('touchstart',e=>{e.preventDefault();isDragging=true;dragStartY=getY(e);dragStartOff=scrollTop;},{passive:false});
+document.addEventListener('mousemove',e=>{if(!isDragging)return;scrollTop=dragStartOff+(getY(e)-dragStartY)/(VP_H-20)*MAX_SCROLL;applyCam(false);});
+document.addEventListener('touchmove',e=>{if(!isDragging)return;scrollTop=dragStartOff+(getY(e)-dragStartY)/(VP_H-20)*MAX_SCROLL;applyCam(false);},{passive:true});
+document.addEventListener('mouseup',()=>{isDragging=false;});
+document.addEventListener('touchend',()=>{isDragging=false;});
+
+// STATS
+function setStatus(t){el('status').textContent=t;}
+function updateStats(skipCashout){
+  const b=fmt(balance),bv=fmt(bet());
+  const newCo=stepsDone>0?bet()*MULTS[currentRow-1]:0;
+  const newCoStr=stepsDone>0?fmt(newCo):'—';
+  el('stat-balance').textContent=b;el('stat-bet').textContent=bv;
+  el('sp-balance-val').textContent=b;el('sp-bet-val').textContent=bv;
+  if(!skipCashout){el('stat-cashout').textContent=newCoStr;el('sp-cashout-val').textContent=newCoStr;currentCashoutDisplay=stepsDone>0?newCo:0;}
+  el('cashout-btn').disabled=!(gameActive&&stepsDone>0);
+}
+function changeBet(dir){if(gameActive)return;betIdx=Math.max(0,Math.min(BETS.length-1,betIdx+dir));el('bet-val').textContent=fmt(bet());updateStats();}
+
+// GRID LOGIC
+function generateGrid(){grid=[];for(let r=0;r<ROWS;r++){const row=Array(COLS).fill('gem');row[Math.floor(Math.random()*COLS)]='bomb';grid.push(row);}}
+function activateRow(row){
+  clearGhost();
+  document.querySelectorAll('.mult-lbl').forEach(l=>l.classList.remove('active'));
+  el(`ml-mult-left-inner-${row}`)?.classList.add('active');el(`ml-mult-right-inner-${row}`)?.classList.add('active');
+  for(let c=0;c<COLS;c++){const t=el(`t-${row}-${c}`);t.className='tile clickable';t.style.cssText=`width:${TILE}px;height:${TILE}px;`;t.onclick=()=>clickTile(row,c);}
+  scrollToRow(row,true);el('step-label').textContent=`Step ${row+1} / ${ROWS}   ·   x${MULTS[row]}`;updateStats();
+}
+
+function clickTile(row,col){
+  if(!gameActive||row!==currentRow)return;
+  clearGhost();
+  const result=grid[row][col];
+  const clickedTile=el(`t-${row}-${col}`);
+  for(let c=0;c<COLS;c++){
+    const t=el(`t-${row}-${c}`),rv=grid[row][c];
+    t.onclick=null;t.classList.remove('clickable');
+    t.className=c===col?(rv==='gem'?'tile gem':'tile bomb'):(rv==='gem'?'tile other-gem':'tile other-bomb');
+    t.style.cssText=`width:${TILE}px;height:${TILE}px;`;
+  }
+  if(result==='bomb'){
+    playSound('bomb');triggerBombAnim();gameActive=false;
+    el('step-label').textContent='💥 You hit a bomb!';
+    el('start-btn').disabled=false;el('cashout-btn').disabled=true;
+    el('stat-cashout').textContent='—';el('sp-cashout-val').textContent='—';currentCashoutDisplay=0;
+    setStatus('You lost your bet.');updateStats(true);
+    setTimeout(()=>showOverlay(false,0),700);
+  } else {
+    playSound('gem');
+    stepsDone++;currentRow++;
+    const newCo=bet()*MULTS[currentRow-1];
+    const fromVal=currentCashoutDisplay;
+    updateStats(true);
+    spawnGemParticles(clickedTile,fromVal,newCo);
+    if(currentRow>=ROWS){
+      const won=bet()*MULTS[ROWS-1];balance+=won;gameActive=false;
+      el('step-label').textContent='🏆 All rows cleared!';
+      el('start-btn').disabled=false;
+      setTimeout(()=>{playSound('win');showOverlay(true,won);},900);
+    } else {
+      setStatus(`Row ${currentRow+1} unlocked. Keep going or cash out!`);
+      // Wait for gem particles to finish flying before advancing camera (~800ms)
+      setTimeout(()=>activateRow(currentRow), 820);
+    }
+  }
+}
+
+function doCashout(){
+  if(!gameActive||stepsDone===0)return;clearGhost();
+  const won=bet()*MULTS[currentRow-1];balance+=won;gameActive=false;
+  for(let c=0;c<COLS;c++){const t=el(`t-${currentRow}-${c}`);if(t){t.classList.remove('clickable');t.onclick=null;}}
+  el('step-label').textContent=`Cashed out at row ${currentRow}: ${fmt(won)} FUN`;
+  el('start-btn').disabled=false;el('cashout-btn').disabled=true;
+  currentCashoutDisplay=0;updateStats();
+  setTimeout(()=>{playSound('win');showOverlay(true,won);},300);
+}
+
+function startGame(){
+  if(balance<bet()){setStatus('Insufficient balance.');return;}
+  playSound('play');balance-=bet();gameActive=true;currentRow=0;stepsDone=0;
+  currentCashoutDisplay=0;
+  el('stat-cashout').textContent='—';el('sp-cashout-val').textContent='—';
+  el('start-btn').disabled=true;el('cashout-btn').disabled=true;
+  generateGrid();rebuildGrid();activateRow(0);
+  setStatus('Pick a tile to start');updateStats(true);
+}
+
+function showOverlay(win,amount){
+  const t=el('overlay-title'),d=el('overlay-detail');
+  t.className=win?'win':'lose';t.textContent=win?'YOU WIN!':'BOMB!';
+  el('overlay-amount').textContent=win?'0.00':'';
+  d.textContent=win?`Balance: ${fmt(balance)} FUN`:`Lost ${fmt(bet())} FUN · Balance: ${fmt(balance)} FUN`;
+  el('overlay').classList.add('show');
+  if(win){spawnWinCascade();animateOverlayAmount(amount);}
+}
+function closeOverlay(){el('overlay').classList.remove('show');el('start-btn').disabled=false;updateStats();}
+
+window.addEventListener('resize',()=>{clearGhost();calcScale();rebuildGrid();updateStats();});
+window.addEventListener('orientationchange',()=>{setTimeout(()=>{clearGhost();calcScale();rebuildGrid();updateStats();},200);});
+
+calcScale();rebuildGrid();updateStats();
+setStatus('Adjust your bet and press PLAY');
+</script>
+</body>
+</html>
