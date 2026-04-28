@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>HIDDEN GEMS MINES · v18</title>
+<title>HIDDEN GEMS MINES · v19</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;}
@@ -109,8 +109,9 @@ body.shake{animation:bombShake 0.5s ease;}
 #scroll-thumb:active{cursor:grabbing;}
 
 /* TILES */
-.tile{background:url("img/tiletapado.png") center/cover no-repeat transparent;border:2px solid rgba(255,255,255,0.08);border-radius:calc(var(--s)*5px);display:flex;align-items:center;justify-content:center;color:transparent;cursor:default;flex-shrink:0;transition:transform 0.12s,filter 0.12s;}
-.tile.clickable{cursor:pointer;background:url("img/tileClickeable.png") center/cover no-repeat transparent;border-color:rgba(255,215,0,0.4);filter:brightness(1.08);}
+.tile{background:url('img/tiletapado.png') center/cover no-repeat #0a0a12;border:2px solid rgba(255,255,255,0.08);border-radius:calc(var(--s)*5px);display:flex;align-items:center;justify-content:center;color:transparent;cursor:default;flex-shrink:0;transition:transform 0.12s,filter 0.12s;filter:brightness(0.45);}
+.tile.clickable,.tile.gem,.tile.bomb,.tile.other-gem,.tile.other-bomb,.tile.passed{filter:none;}
+.tile.clickable{cursor:pointer;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;border-color:rgba(255,215,0,0.4);filter:brightness(1.08);}
 .tile.gem{background:url('img/tileGema.png') center/cover no-repeat #1a4a2a;border-color:rgba(100,255,150,0.6);}
 .tile.bomb{background:url('img/tileBomba.png') center/cover no-repeat #4a1a1a;border-color:rgba(255,80,80,0.7);}
 .tile.other-gem{background:url('img/tilePasada.png') center/cover no-repeat #0e2a1a;border-color:rgba(100,200,130,0.15);}
@@ -162,7 +163,7 @@ body.shake{animation:bombShake 0.5s ease;}
 <body>
 <div id="gems-bg"></div>
 <img id="studio-logo" src="img/logoBlanco.png" alt="Andes Horizon Studios">
-<div id="proto-corner">Prototype v18</div>
+<div id="proto-corner">Prototype v19</div>
 <div id="bomb-flash"></div>
 <div id="intro-reset"></div>
 
@@ -189,7 +190,7 @@ body.shake{animation:bombShake 0.5s ease;}
 <div class="menu-content" id="panel-settings">
   <h3>Settings</h3>
   <div class="pref-row"><label>Language</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">English</span></div>
-  <div class="pref-row"><label>Version</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">Prototype v18</span></div>
+  <div class="pref-row"><label>Version</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">Prototype v19</span></div>
   <button class="close-btn" onclick="closePanel('settings')">CLOSE</button>
 </div>
 
@@ -273,23 +274,32 @@ const getY=e=>e.touches?e.touches[0].clientY:e.clientY;
 const el=id=>document.getElementById(id);
 
 // AUDIO
-// Unlock audio on first touch/click (browser autoplay policy)
-let audioUnlocked=false;
-function unlockAudio(){
-  if(audioUnlocked)return;
-  audioUnlocked=true;
-  Object.values(AC).forEach(a=>{
-    const s=a.cloneNode();s.volume=0;
-    s.play().then(()=>s.pause()).catch(()=>{});
-  });
-}
-document.addEventListener('click',unlockAudio,{once:true});
-document.addEventListener('touchstart',unlockAudio,{once:true});
-
-const SFX={play:{src:'audio/soundJugar.mp3',vol:0.7},gem:{src:'audio/soundgemReveal.mp3',vol:0.8},bomb:{src:'audio/soundBomb.mp3',vol:0.9},win:{src:'audio/soundganaste.mp3',vol:0.8}};
+// Try both capitalizations for gem sound (GitHub Pages is case-sensitive)
+function makeAudio(src,vol){const a=new Audio(src);a.volume=vol;a.preload='auto';return a;}
+const SFX={play:{src:'audio/soundJugar.mp3',vol:0.7},gem:{src:'audio/soundGemReveal.mp3',vol:0.8},bomb:{src:'audio/soundBomb.mp3',vol:0.9},win:{src:'audio/soundganaste.mp3',vol:0.8}};
 const AC={};
-Object.entries(SFX).forEach(([k,{src,vol}])=>{const a=new Audio(src);a.volume=vol;a.preload='auto';AC[k]=a;});
-function playSound(k){if(muted)return;const o=AC[k];if(!o)return;const c=o.cloneNode();c.volume=o.volume;c.play().catch(()=>{});}
+Object.entries(SFX).forEach(([k,{src,vol}])=>{AC[k]=makeAudio(src,vol);});
+
+// Unlock audio context on first user gesture (required by browsers)
+let _audioUnlocked=false;
+function _unlockAudio(){
+  if(_audioUnlocked)return; _audioUnlocked=true;
+  Object.values(AC).forEach(a=>{
+    const tmp=a.cloneNode();tmp.volume=0;
+    tmp.play().then(()=>tmp.pause()).catch(()=>{});
+  });
+  document.removeEventListener('click',_unlockAudio);
+  document.removeEventListener('touchstart',_unlockAudio);
+}
+document.addEventListener('click',_unlockAudio,{once:true});
+document.addEventListener('touchstart',_unlockAudio,{once:true});
+
+function playSound(k){
+  if(muted)return;
+  const o=AC[k];if(!o)return;
+  const c=o.cloneNode();c.volume=o.volume;
+  c.play().catch(e=>console.warn('audio play failed:',k,e));
+}
 
 // AUDIO TOGGLE — from menu item, no panel
 function toggleMuteMenu(){
@@ -569,7 +579,6 @@ function clickTile(row,col){
       setTimeout(()=>{playSound('win');showOverlay(true,won);},900);
     } else {
       setStatus(`Row ${currentRow+1} unlocked. Keep going or cash out!`);
-      // Wait for gem particles to finish flying before advancing camera (~800ms)
       setTimeout(()=>activateRow(currentRow), 820);
     }
   }
