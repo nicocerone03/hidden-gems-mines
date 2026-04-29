@@ -374,7 +374,7 @@ function showGameIntro(){
   setTimeout(()=>{
     intro.classList.add('fade-out');
     setTimeout(()=>intro.classList.add('hidden'),800);
-  },2500);
+  },1500);
 }
 let rClicks=0,rTimer=null;
 el('intro-reset').addEventListener('click',()=>{rClicks++;clearTimeout(rTimer);rTimer=setTimeout(()=>rClicks=0,600);if(rClicks>=3){rClicks=0;localStorage.removeItem(STORAGE_KEY);const i=el('intro');i.classList.remove('hidden','fade-out');setTimeout(()=>{i.classList.add('fade-out');setTimeout(()=>i.classList.add('hidden'),800);},2500);}});
