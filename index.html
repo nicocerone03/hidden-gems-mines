@@ -22,7 +22,7 @@ body.shake{animation:bombShake 0.5s ease;}
 .gem-particle{position:fixed;pointer-events:none;z-index:700;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
 
 /* CASCADE GEMS — above overlay backdrop, below overlay box */
-.cascade-gem{position:fixed;pointer-events:none;z-index:799;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
+.cascade-gem{position:fixed;pointer-events:none;z-index:798;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
 
 /* CASHOUT BUMP */
 @keyframes cashoutBump{0%{transform:scale(1);}30%{transform:scale(1.38);}70%{transform:scale(1.28);}100%{transform:scale(1);}}
@@ -393,7 +393,7 @@ function initGameLogoSpine(){
     gameLogoSpinePlayer=new spine.SpinePlayer('intro-spine-container',{
       jsonUrl:'spine/gameLogoAnim.json',
       atlasUrl:'spine/gameLogoAnim.atlas',
-      animation:'logoIntroAnim',
+      animation:'animation',
       autoplay:false,
       showControls:false,
       backgroundColor:'#00000000',
@@ -407,10 +407,11 @@ function initGameLogoSpine(){
 
 function showGameIntro(){
   const intro=el('intro');
+  // El shade ya debería estar visible (lo activó el loader antes)
+  // Solo nos aseguramos
   intro.classList.remove('hidden','fade-out');
-  // rAF para que el DOM aplique antes de show
+  intro.classList.add('show');
   requestAnimationFrame(()=>{
-    intro.classList.add('show');
     // Reproducir la animación Spine
     try{
       if(gameLogoSpinePlayer&&gameLogoSpinePlayer.animationState){
@@ -782,10 +783,14 @@ const FAKE_PROGRESS_DURATION=2000;
           screen.classList.add('hidden');
           // 500ms pause where game UI is briefly visible behind dark shade
           // (this is where the user sees the dark overlay before game logo appears)
+          // Show dark shade first, then trigger the logo intro after 500ms
+          const intro=el('intro');
+          intro.classList.remove('hidden','fade-out');
+          requestAnimationFrame(()=>intro.classList.add('show'));
           setTimeout(()=>{
             showGameIntro();
-          },500);
-        },700);
+          },50);
+        },50);
       },200);
     } else {
       requestAnimationFrame(tick);
