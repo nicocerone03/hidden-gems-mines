@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>HIDDEN GEMS MINES · v21</title>
+<title>HIDDEN GEMS MINES · v22</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 html,body{width:100%;height:100%;overflow:hidden;}
@@ -22,7 +22,7 @@ body.shake{animation:bombShake 0.5s ease;}
 .gem-particle{position:fixed;pointer-events:none;z-index:700;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
 
 /* CASCADE GEMS — above overlay backdrop, below overlay box */
-.cascade-gem{position:fixed;pointer-events:none;z-index:802;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
+.cascade-gem{position:fixed;pointer-events:none;z-index:799;background:url('img/tileMiniGems.png') center/contain no-repeat;border-radius:50%;}
 
 /* CASHOUT BUMP */
 @keyframes cashoutBump{0%{transform:scale(1);}30%{transform:scale(1.38);}70%{transform:scale(1.28);}100%{transform:scale(1);}}
@@ -107,11 +107,22 @@ body.shake{animation:bombShake 0.5s ease;}
 #bomb-explosion.show{display:block;}
 
 /* INTRO */
-#intro{position:fixed;inset:0;z-index:900;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;transition:opacity 0.8s ease;}
+/* Game logo intro — Spine animation over very dark shade */
+#intro{
+  position:fixed;inset:0;z-index:900;
+  background:rgba(0,0,0,0.95);  /* shade más opaco que el de win/bomb (que es 0.78) */
+  display:flex;align-items:center;justify-content:center;
+  transition:opacity 0.5s ease;
+  opacity:0;
+  pointer-events:none;
+}
+#intro.show{opacity:1;pointer-events:all;}
 #intro.fade-out{opacity:0;pointer-events:none;}
 #intro.hidden{display:none;}
-#intro-logo{max-width:55vw;max-height:55vh;width:auto;height:auto;animation:logoPulse 2s ease-in-out;}
-@keyframes logoPulse{0%{opacity:0;transform:scale(0.9);}30%{opacity:1;transform:scale(1);}100%{opacity:1;transform:scale(1);}}
+#intro-spine-container{
+  width:min(70vw,500px);
+  height:min(70vh,500px);
+}
 
 /* GAME */
 #game{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:calc(var(--s)*8px);width:calc(var(--s)*560px);}
@@ -166,7 +177,7 @@ body.shake{animation:bombShake 0.5s ease;}
 .tile.passed{background:url('img/tilePasada.png') center/cover no-repeat #0a1e0a;border-color:rgba(80,180,100,0.1);}
 
 /* GHOST */
-#tile-ghost{position:fixed;pointer-events:none;z-index:500;border-radius:calc(var(--s)*5px);border:2px solid #ffd700;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;box-shadow:0 0 16px rgba(255,215,0,0.5);opacity:0;transition:opacity 0.12s;}
+#tile-ghost{position:fixed;pointer-events:none;z-index:500;border-radius:calc(var(--s)*5px);border:2px solid transparent;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;box-shadow:none;opacity:0;transition:opacity 0.12s;}
 
 /* STATUS */
 #status{font-family:monospace;font-size:calc(var(--s)*10px);color:rgba(255,255,255,0.55);letter-spacing:1.5px;text-transform:uppercase;text-shadow:0 1px 3px rgba(0,0,0,0.8);}
@@ -198,7 +209,7 @@ body.shake{animation:bombShake 0.5s ease;}
 }
 
 /* OVERLAY */
-#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);align-items:center;justify-content:center;z-index:800;}
+#overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);align-items:center;justify-content:center;z-index:798;}
 #overlay.show{display:flex;}
 #overlay-box{background:#1a1a2a;border:1px solid rgba(255,255,255,0.15);border-radius:12px;padding:36px 52px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:14px;position:relative;z-index:803;max-width:90vw;}
 #overlay-title{font-family:monospace;font-size:clamp(20px,4vw,28px);font-weight:bold;letter-spacing:3px;text-transform:uppercase;}
@@ -221,7 +232,7 @@ body.shake{animation:bombShake 0.5s ease;}
 
 <div id="gems-bg"></div>
 <img id="studio-logo" src="img/logoBlanco.png" alt="Andes Horizon Studios">
-<div id="proto-corner">Prototype v21</div>
+<div id="proto-corner">Prototype v22</div>
 <div id="bomb-flash"></div>
 <div id="intro-reset"></div>
 
@@ -248,12 +259,14 @@ body.shake{animation:bombShake 0.5s ease;}
 <div class="menu-content" id="panel-settings">
   <h3>Settings</h3>
   <div class="pref-row"><label>Language</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">English</span></div>
-  <div class="pref-row"><label>Version</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">Prototype v21</span></div>
+  <div class="pref-row"><label>Version</label><span style="font-family:monospace;font-size:12px;color:rgba(255,255,255,0.45);">Prototype v22</span></div>
   <button class="close-btn" onclick="closePanel('settings')">CLOSE</button>
 </div>
 
-<!-- INTRO -->
-<div id="intro"><img id="intro-logo" src="img/gameLogo.png" alt="Logo"></div>
+<!-- INTRO Spine — game logo animation -->
+<div id="intro">
+  <div id="intro-spine-container"></div>
+</div>
 <div id="tile-ghost"></div>
 
 <div id="game">
@@ -368,13 +381,52 @@ function closePanel(id){el('panel-'+id).classList.remove('open');}
 // Hidden by default at startup.
 el('intro').classList.add('hidden');
 
+// Game logo Spine player (initialized after loading completes)
+let gameLogoSpinePlayer=null;
+function initGameLogoSpine(){
+  if(gameLogoSpinePlayer)return;
+  if(typeof spine==='undefined'||!spine.SpinePlayer){
+    console.warn('Spine player not loaded yet (game logo)');
+    return;
+  }
+  try{
+    gameLogoSpinePlayer=new spine.SpinePlayer('intro-spine-container',{
+      jsonUrl:'spine/gameLogoAnim.json',
+      atlasUrl:'spine/gameLogoAnim.atlas',
+      animation:'logoIntroAnim',
+      autoplay:false,
+      showControls:false,
+      backgroundColor:'#00000000',
+      alpha:true,
+      preserveDrawingBuffer:false,
+      success:function(){console.log('Game logo Spine ready');},
+      error:function(p,reason){console.warn('Game logo Spine error:',reason);}
+    });
+  }catch(e){console.warn('Game logo init failed:',e);}
+}
+
 function showGameIntro(){
   const intro=el('intro');
   intro.classList.remove('hidden','fade-out');
+  // rAF para que el DOM aplique antes de show
+  requestAnimationFrame(()=>{
+    intro.classList.add('show');
+    // Reproducir la animación Spine
+    try{
+      if(gameLogoSpinePlayer&&gameLogoSpinePlayer.animationState){
+        gameLogoSpinePlayer.animationState.setAnimation(0,'logoIntroAnim',false);
+        gameLogoSpinePlayer.play();
+      }
+    }catch(e){console.warn('logo play err:',e);}
+  });
+  // Animación dura 3s. Fade out arranca a los 2.5s y termina a los 3s
   setTimeout(()=>{
+    intro.classList.remove('show');
     intro.classList.add('fade-out');
-    setTimeout(()=>intro.classList.add('hidden'),800);
-  },1500);
+  },2500);
+  setTimeout(()=>{
+    intro.classList.add('hidden');
+  },3000);
 }
 let rClicks=0,rTimer=null;
 el('intro-reset').addEventListener('click',()=>{rClicks++;clearTimeout(rTimer);rTimer=setTimeout(()=>rClicks=0,600);if(rClicks>=3){rClicks=0;localStorage.removeItem(STORAGE_KEY);const i=el('intro');i.classList.remove('hidden','fade-out');setTimeout(()=>{i.classList.add('fade-out');setTimeout(()=>i.classList.add('hidden'),800);},2500);}});
@@ -454,7 +506,7 @@ function spawnWinCascade(){
 
       // Launch vector
       const angle=(BASE_ANGLE+(Math.random()-0.5)*SPREAD)*Math.PI/180;
-      const speed=7+Math.random()*10;   // px/frame initial speed
+      const speed=14+Math.random()*20;   // px/frame initial speed
       let vx=Math.cos(angle)*speed;
       let vy=Math.sin(angle)*speed;     // negative = upward
       let px=cx-SIZE/2;
@@ -504,7 +556,7 @@ function animateOverlayAmount(targetVal){
 
 // GHOST
 const ghost=el('tile-ghost');let ghostTarget=null;
-function showGhost(tile){if(ghostTarget===tile)return;ghostTarget=tile;const r=tile.getBoundingClientRect(),size=Math.round(TILE*1.12),off=(size-TILE)/2;ghost.style.cssText=`position:fixed;left:${r.left-off}px;top:${r.top-off}px;width:${size}px;height:${size}px;border-radius:calc(var(--s)*5px);border:2px solid #ffd700;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;box-shadow:0 0 16px rgba(255,215,0,0.5);pointer-events:none;z-index:500;opacity:1;`;tile.style.opacity='0';}
+function showGhost(tile){if(ghostTarget===tile)return;ghostTarget=tile;const r=tile.getBoundingClientRect(),size=Math.round(TILE*1.12),off=(size-TILE)/2;ghost.style.cssText=`position:fixed;left:${r.left-off}px;top:${r.top-off}px;width:${size}px;height:${size}px;border-radius:calc(var(--s)*5px);border:2px solid transparent;background:url('img/tileClickeable.png') center/cover no-repeat #2a5a8a;box-shadow:0 0 16px rgba(255,215,0,0.5);pointer-events:none;z-index:500;opacity:1;`;tile.style.opacity='0';}
 function hideGhost(){if(ghostTarget){ghostTarget.style.opacity='';ghostTarget=null;}ghost.style.cssText='position:fixed;opacity:0;pointer-events:none;z-index:500;';}
 function clearGhost(){hideGhost();}
 el('grid').addEventListener('mouseover',e=>{if(camAnimTimer)return;const t=e.target.closest('.tile.clickable');if(t)showGhost(t);});
@@ -724,11 +776,15 @@ const FAKE_PROGRESS_DURATION=2000;
       // Done — fade out
       fill.style.width='100%';
       setTimeout(()=>{
+        // Loading screen fades out
         screen.classList.add('fade-out');
         setTimeout(()=>{
           screen.classList.add('hidden');
-          // After loading screen fades out, show the game logo intro
-          showGameIntro();
+          // 500ms pause where game UI is briefly visible behind dark shade
+          // (this is where the user sees the dark overlay before game logo appears)
+          setTimeout(()=>{
+            showGameIntro();
+          },500);
         },700);
       },200);
     } else {
@@ -775,7 +831,10 @@ function initBombSpine(){
 }
 
 // Init Spine after loading screen finishes
-setTimeout(initBombSpine, MIN_LOADING_MS+500);
+setTimeout(()=>{
+  initBombSpine();
+  initGameLogoSpine();
+}, MIN_LOADING_MS+500);
 
 function playBombExplosion(tileDom){
   if(!bombSpinePlayer)return;
@@ -796,10 +855,16 @@ function playBombExplosion(tileDom){
     }
   }catch(e){console.warn('bomb anim err:',e);}
 
-  // Hide after animation duration (~1s, adjust if needed)
+  // Fade out smoothly when animation ends
   setTimeout(()=>{
-    cont.style.display='none';
-  }, 1500);
+    cont.style.transition='opacity 0.3s ease';
+    cont.style.opacity='0';
+    setTimeout(()=>{
+      cont.style.display='none';
+      cont.style.opacity='1';
+      cont.style.transition='';
+    },300);
+  }, 700);
 }
 
 </script>

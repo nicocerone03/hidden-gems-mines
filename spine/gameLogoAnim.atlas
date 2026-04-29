@@ -1,0 +1,41 @@
+
+gameLogoAnim.png
+size: 1198,945
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+frameLogo
+  rotate: false
+  xy: 2, 222
+  size: 939, 721
+  orig: 940, 721
+  offset: 0, 0
+  index: -1
+gemsLogo
+  rotate: true
+  xy: 943, 194
+  size: 749, 253
+  orig: 749, 253
+  offset: 0, 0
+  index: -1
+glintLogo
+  rotate: false
+  xy: 780, 82
+  size: 122, 138
+  orig: 131, 148
+  offset: 4, 5
+  index: -1
+hiddenLogo
+  rotate: false
+  xy: 2, 2
+  size: 776, 218
+  orig: 776, 218
+  offset: 0, 0
+  index: -1
+sparkLogo
+  rotate: true
+  xy: 904, 71
+  size: 121, 100
+  orig: 121, 100
+  offset: 0, 0
+  index: -1
